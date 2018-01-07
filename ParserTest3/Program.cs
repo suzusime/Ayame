@@ -43,6 +43,8 @@ namespace ParserTest3
 		{
 			testPreprocess();
 			testTokenize();
+			testModifyTokenList();
+
 			Console.ReadLine();
 		}
 
@@ -169,6 +171,15 @@ namespace ParserTest3
 			return res;
 		}
 
+		/// <summary>
+		/// トークンリストから文法上不要なトークンを削除する。
+		/// </summary>
+		/// <param name="list"></param>
+		static void ModifyTokenList(List<Token> list)
+		{
+			list.RemoveAll(x => (x.Type == TokenType.Dollar)||(x.Type==TokenType.Slash));
+		}
+
 		#region テスト
 		/// <summary>
 		/// exprがfalseのときにエラーを出す。
@@ -232,6 +243,27 @@ namespace ParserTest3
 			ok = ok && tes10.Count == 1;
 
 			Assert("Tokenize", ok);
+		}
+		static private void testModifyTokenList()
+		{
+			bool ok = true;
+
+			var list1 = Tokenize("hoge");
+			var list1b = new List<Token>(list1);
+			ModifyTokenList(list1b);
+			ok = ok && list1.Count == list1b.Count;
+
+			var list2 = Tokenize("ho/ge//");
+			var list2b = new List<Token>(list2);
+			ModifyTokenList(list2b);
+			ok = ok && list2.Count -1== list2b.Count;
+
+			var list3 = Tokenize("ho$geほげ$にゃん");
+			var list3b = new List<Token>(list3);
+			ModifyTokenList(list3b);
+			ok = ok && list3.Count - 1 == list3b.Count;
+
+			Assert("ModifyTokenList", ok);
 		}
 		#endregion
 	}
