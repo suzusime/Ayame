@@ -8,6 +8,9 @@ using System.Text.RegularExpressions;
 
 namespace ParserTest3
 {
+	/// <summary>
+	/// 字句解析器の出力に用いるトークン
+	/// </summary>
 	class Token {
 		public TokenType Type {
 			get; set;
@@ -22,6 +25,9 @@ namespace ParserTest3
 		}
 	}
 	
+	/// <summary>
+	/// Tokenの種類
+	/// </summary>
 	enum TokenType
 	{
 		LF,
@@ -37,15 +43,102 @@ namespace ParserTest3
 		NormalString, //普通文字列
 	}
 
+	static class TokenTypeExt
+	{
+		public static string getName(this TokenType value)
+		{
+			string[] values = { "改行", "#", "$", "/", "[", "]", "区切", "タブ", "変数", "普通文字列" };
+			return values[(int)value];
+		}
+	}
+
+	/// <summary>
+	/// 抽象構文木の節点
+	/// </summary>
+	class Node
+	{
+		public NodeType Type
+		{
+			get; set;
+		}
+		public List<Token> Children
+		{
+			get; set;
+		}
+		public Node(NodeType type, List<Token> children)
+		{
+			Type = type;
+			Children = children;
+		}
+	}
+
+	/// <summary>
+	/// Nodeの種類
+	/// </summary>
+	enum NodeType
+	{
+		Script,//スクリプト
+		Line,//行
+		Expr,//式
+		Str,//文字列
+		Func,//函数
+	}
+
+	static class NodeTypeExt
+	{
+		public static string getName(this NodeType value)
+		{
+			string[] values = { "スクリプト", "行", "式", "文字列", "函数" };
+			return values[(int)value];
+		}
+	}
+
+	/// <summary>
+	/// 構文解析中に結果を返すためのクラス。
+	/// </summary>
+	class ParseResult
+	{
+		public Node node { get; set; }
+		public int index { get; set; }
+		public ParseResult(Node _node, int _index)
+		{
+			node = _node;
+			index = _index;
+		}
+	}
+
+	class ParseErrorException : Exception {
+		public ParseErrorException(List<Token> list, int index, string massage) : base("構文解析エラー：\n"+massage) { }
+		public ParseErrorException(List<Token> list, int index, NodeType parsing, TokenType entered) 
+			: base("構文解析エラー：\n構文要素《"+parsing.getName()+"》の解析中にエラー。\nトークン〈"+entered.getName()+"〉はここに来てはいけません。")
+		{ }
+	}
+
 	class Program
 	{
 		static void Main(string[] args)
 		{
-			testPreprocess();
-			testTokenize();
-			testModifyTokenList();
+			Lexer.Test();
+			Parser.Test();
 
 			Console.ReadLine();
+		}
+	}
+
+	/// <summary>
+	/// 字句解析器
+	/// </summary>
+	static class Lexer
+	{
+		/// <summary>
+		/// 字句解析を行う
+		/// </summary>
+		/// <returns></returns>
+		static public List<Token> Lex(string src)
+		{
+			List<Token> list = Tokenize(Preprocess(src));
+			ModifyTokenList(list);
+			return list;
 		}
 
 		/// <summary>
@@ -136,7 +229,7 @@ namespace ParserTest3
 						if(res.Count > 0 && res.Last().Type == TokenType.Dollar)
 						{
 							res.RemoveAt(res.Count - 1);
-							res.Add(new Token(TokenType.Variable, s));
+							res.Add(new Token(TokenType.Variable, "$"+s));
 						}
 						//変数名が前から続いている場合も変数名とする
 						else if (res.Count > 0 && res.Last().Type == TokenType.Variable)
@@ -181,6 +274,17 @@ namespace ParserTest3
 		}
 
 		#region テスト
+		/// <summary>
+		/// テストを行う函数
+		/// </summary>
+		/// <param name="args"></param>
+		static public void Test()
+		{
+			testPreprocess();
+			testTokenize();
+			testModifyTokenList();
+		}
+
 		/// <summary>
 		/// exprがfalseのときにエラーを出す。
 		/// </summary>
@@ -264,6 +368,81 @@ namespace ParserTest3
 			ok = ok && list3.Count - 1 == list3b.Count;
 
 			Assert("ModifyTokenList", ok);
+		}
+		#endregion
+	}
+
+	static class Parser
+	{
+		/// <summary>
+		/// 文字列をパースする
+		/// </summary>
+		/// <param name="list"></param>
+		/// <param name="index"></param>
+		/// <returns></returns>
+		static ParseResult str(List<Token> list, int index=0)
+		{
+			//そこで終了する場合
+			if (index >= list.Count)
+			{
+				//ここで終わってはいけないので例外を投げる
+				throw new ParseErrorException(list, index,"構文要素《文字列》の解析中にエラー。\nここで終了してはいけません。");
+			}
+
+			if (list[index].Type == TokenType.NormalString)
+			{
+				int resindex = index + 1;
+				return new ParseResult(new Node(NodeType.Str,new List<Token>() { list[index] }), resindex);
+			}
+			else if (list[index].Type == TokenType.Variable)
+			{
+				int resindex = index + 1;
+				return new ParseResult(new Node(NodeType.Str, new List<Token>() { list[index] }), resindex);
+			}
+			else
+			{
+				//ダメな要素がある場合
+				throw new ParseErrorException(list, index, NodeType.Str, list[index].Type);
+			}
+		}
+
+		#region テスト
+		/// <summary>
+		/// テストを行う函数
+		/// </summary>
+		/// <param name="args"></param>
+		static public void Test()
+		{
+			testStr();
+		}
+
+		/// <summary>
+		/// exprがfalseのときにエラーを出す。
+		/// </summary>
+		/// <param name="name"></param>
+		/// <param name="expr"></param>
+		static private void Assert(string name, bool expr)
+		{
+			if (expr)
+			{
+				Console.WriteLine("OK: " + name);
+			}
+			else
+			{
+				Console.WriteLine("NG: " + name);
+			}
+		}
+
+		static void testStr()
+		{
+			bool ok = true;
+
+			//ミスったら例外が出るのでokもなにもないが…
+			var test1 = str(Lexer.Lex("hoge"),0);
+			var test2 = str(Lexer.Lex("$hoge"), 0);
+			var test3 = str(Lexer.Lex("\nhoge"), 1);
+
+			Assert("str", ok);
 		}
 		#endregion
 	}
