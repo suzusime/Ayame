@@ -82,6 +82,7 @@ namespace ParserTest3
 	{
 		Script,//スクリプト
 		Line,//行
+        LabelLine,//ラベル行
 		Expr,//式
 		Str,//文字列
 		Func,//函数
@@ -91,7 +92,7 @@ namespace ParserTest3
 	{
 		public static string getName(this NodeType value)
 		{
-			string[] values = { "スクリプト", "行", "式", "文字列", "函数" };
+			string[] values = { "スクリプト", "行", "ラベル行", "式", "文字列", "函数" };
 			return values[(int)value];
 		}
 	}
@@ -379,53 +380,53 @@ namespace ParserTest3
     /// 構文解析器
     /// </summary>
 	static class Parser
-	{
-		/// <summary>
-		/// 文字列をパースする
-		/// </summary>
-		/// <param name="list"></param>
-		/// <param name="index"></param>
-		/// <returns></returns>
-		static ParseResult str(List<Token> list, int index)
-		{
-			//そこで終了する場合
-			if (index >= list.Count)
-			{
-				//ここで終わってはいけないので例外を投げる
-				throw new ParseErrorException(list, index,"構文要素《文字列》の解析中にエラー。\nここで終了してはいけません。");
-			}
+    {
+        /// <summary>
+        /// 文字列をパースする
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        static ParseResult str(List<Token> list, int index)
+        {
+            //そこで終了する場合
+            if (index >= list.Count)
+            {
+                //ここで終わってはいけないので例外を投げる
+                throw new ParseErrorException(list, index, "構文要素《文字列》の解析中にエラー。\nここで終了してはいけません。");
+            }
 
-			if (list[index].Type == TokenType.NormalString)
-			{
-				int resindex = index + 1;
-				return new ParseResult(new Node(NodeType.Str, list[index], new List<Node>()), resindex);
-			}
-			else if (list[index].Type == TokenType.Variable)
-			{
-				int resindex = index + 1;
-				return new ParseResult(new Node(NodeType.Str, list[index], new List<Node>()), resindex);
-			}
-			else
-			{
-				//ダメな要素がある場合
-				throw new ParseErrorException(list, index, NodeType.Str, list[index].Type);
-			}
-		}
+            if (list[index].Type == TokenType.NormalString)
+            {
+                int resindex = index + 1;
+                return new ParseResult(new Node(NodeType.Str, list[index], new List<Node>()), resindex);
+            }
+            else if (list[index].Type == TokenType.Variable)
+            {
+                int resindex = index + 1;
+                return new ParseResult(new Node(NodeType.Str, list[index], new List<Node>()), resindex);
+            }
+            else
+            {
+                //ダメな要素がある場合
+                throw new ParseErrorException(list, index, NodeType.Str, list[index].Type);
+            }
+        }
 
-		/// <summary>
-		/// 函数
-		/// </summary>
-		/// <param name="list"></param>
-		/// <param name="index"></param>
-		/// <returns></returns>
-		static ParseResult Func(List<Token> list, int index)
-		{
-			//そこで終了する場合
-			if (index >= list.Count)
-			{
-				//ここで終わってはいけないので例外を投げる
-				throw new ParseErrorException(list, index, "構文要素《函数》の解析中にエラー。\nここで終了してはいけません。");
-			}
+        /// <summary>
+        /// 函数
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        static ParseResult Func(List<Token> list, int index)
+        {
+            //そこで終了する場合
+            if (index >= list.Count)
+            {
+                //ここで終わってはいけないので例外を投げる
+                throw new ParseErrorException(list, index, "構文要素《函数》の解析中にエラー。\nここで終了してはいけません。");
+            }
 
             if (list[index].Type == TokenType.NormalString || list[index].Type == TokenType.Variable)
             {
@@ -433,7 +434,7 @@ namespace ParserTest3
                 ParseResult r2 = Func_dash(list, r1.index);
                 List<Node> children = new List<Node>() { r1.node };
                 children.AddRange(r2.node.Children);
-                return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None,""), children), r2.index);
+                return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None, ""), children), r2.index);
             }
             else if (list[index].Type == TokenType.OpenBlacket)
             {
@@ -454,27 +455,27 @@ namespace ParserTest3
                 //ダメな要素がある場合
                 throw new ParseErrorException(list, index, NodeType.Func, list[index].Type);
             }
-		}
+        }
 
-		/// <summary>
-		/// 函数'
-		/// </summary>
-		/// <param name="list"></param>
-		/// <param name="index"></param>
-		/// <returns></returns>
-		static ParseResult Func_dash(List<Token> list, int index)
-		{
-			//そこで終了する場合
-			if (index >= list.Count)
-			{
-				//ここで終わってはいけないので例外を投げる
-				throw new ParseErrorException(list, index, "構文要素《函数》の解析中にエラー。\nここで終了してはいけません。");
-			}
+        /// <summary>
+        /// 函数'
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        static ParseResult Func_dash(List<Token> list, int index)
+        {
+            //そこで終了する場合
+            if (index >= list.Count)
+            {
+                //ここで終わってはいけないので例外を投げる
+                throw new ParseErrorException(list, index, "構文要素《函数》の解析中にエラー。\nここで終了してはいけません。");
+            }
 
             //無の場合
             if (list[index].Type == TokenType.CloseBlacket)
             {
-                return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None,""), new List<Node>()), index+1);
+                return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None, ""), new List<Node>()), index + 1);
             }
             //さらに続く場合
             else if (list[index].Type == TokenType.Delimiter)
@@ -487,7 +488,7 @@ namespace ParserTest3
                 //ダメな要素がある場合
                 throw new ParseErrorException(list, index, NodeType.Func, list[index].Type);
             }
-		}
+        }
 
         /// <summary>
         /// 式
@@ -503,13 +504,13 @@ namespace ParserTest3
                 //ここで終わってはいけないので例外を投げる
                 throw new ParseErrorException(list, index, "構文要素《式》の解析中にエラー。\nここで終了してはいけません。");
             }
-            if(list[index].Type == TokenType.Delimiter)
+            if (list[index].Type == TokenType.Delimiter)
             {
                 ParseResult r1 = Expr_dash(list, index + 1);
                 List<Node> children = new List<Node>(r1.node.Children);
                 return new ParseResult(new Node(NodeType.Expr, new Token(TokenType.None, ""), children), r1.index);
             }
-            else if(list[index].Type == TokenType.NormalString || list[index].Type == TokenType.Variable)
+            else if (list[index].Type == TokenType.NormalString || list[index].Type == TokenType.Variable)
             {
                 ParseResult r1 = str(list, index);
                 ParseResult r2 = Expr_dash(list, r1.index);
@@ -517,10 +518,10 @@ namespace ParserTest3
                 children.AddRange(r2.node.Children);
                 return new ParseResult(new Node(NodeType.Expr, new Token(TokenType.None, ""), children), r2.index);
             }
-            else if(list[index].Type == TokenType.OpenBlacket)
+            else if (list[index].Type == TokenType.OpenBlacket)
             {
                 ParseResult r1 = Func(list, index + 1);
-                if(r1.index >= list.Count)
+                if (r1.index >= list.Count)
                 {
                     throw new ParseErrorException(list, r1.index, "構文要素《式》の解析中にエラー。\nここで終了してはいけません。");
                 }
@@ -571,46 +572,94 @@ namespace ParserTest3
             }
         }
 
+        static ParseResult Line(List<Token> list, int index)
+        {
+            //そこで終了する場合
+            if (index >= list.Count)
+            {
+                //ここで終わってもよい
+                //終わった場合さらに一つ先を返す
+                //空行扱い
+                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), new List<Node>()), index + 1);
+            }
+
+            //名前と台詞が両方ある場合
+            if (list[index].Type == TokenType.Delimiter || list[index].Type == TokenType.NormalString
+                || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBlacket)
+            {
+                ParseResult r1 = Expr(list, index);
+                ParseResult r2 = Expr(list, r1.index);
+                List<Node> children = new List<Node>() { r1.node };
+                children.Add(r2.node);
+                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r2.index);
+            }
+            //台詞のみの場合
+            else if (list[index].Type == TokenType.Tab)
+            {
+                ParseResult r1 = Expr(list, index + 1);
+                List<Node> children = new List<Node>() { r1.node };
+                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r1.index);
+            }
+            //ラベルの場合
+            else if (list[index].Type == TokenType.Sharp)
+            {
+                ParseResult r1 = str(list, index + 1);
+                List<Node> children = new List<Node>() { r1.node };
+                return new ParseResult(new Node(NodeType.LabelLine, r1.node.Content, children), r1.index);
+            }
+            //空行
+            else if (list[index].Type == TokenType.LF)
+            {
+                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), new List<Node>()), index + 1);
+            }
+            //ダメな場合
+            else
+            {
+                throw new ParseErrorException(list, index, NodeType.Line, list[index].Type);
+            }
+        }
+
         #region テスト
         /// <summary>
         /// テストを行う函数
         /// </summary>
         /// <param name="args"></param>
         static public void Test()
-		{
-			testStr();
+        {
+            testStr();
             testFunc();
             testExpr();
-		}
+            testLine();
+        }
 
-		/// <summary>
-		/// exprがfalseのときにエラーを出す。
-		/// </summary>
-		/// <param name="name"></param>
-		/// <param name="expr"></param>
-		static private void Assert(string name, bool expr)
-		{
-			if (expr)
-			{
-				Console.WriteLine("OK: " + name);
-			}
-			else
-			{
-				Console.WriteLine("NG: " + name);
-			}
-		}
+        /// <summary>
+        /// exprがfalseのときにエラーを出す。
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="expr"></param>
+        static private void Assert(string name, bool expr)
+        {
+            if (expr)
+            {
+                Console.WriteLine("OK: " + name);
+            }
+            else
+            {
+                Console.WriteLine("NG: " + name);
+            }
+        }
 
-		static void testStr()
-		{
-			bool ok = true;
+        static void testStr()
+        {
+            bool ok = true;
 
-			//ミスったら例外が出るのでokもなにもないが…
-			var test1 = str(Lexer.Lex("hoge"),0);
-			var test2 = str(Lexer.Lex("$hoge"), 0);
-			var test3 = str(Lexer.Lex("\nhoge"), 1);
+            //ミスったら例外が出るのでokもなにもないが…
+            var test1 = str(Lexer.Lex("hoge"), 0);
+            var test2 = str(Lexer.Lex("$hoge"), 0);
+            var test3 = str(Lexer.Lex("\nhoge"), 1);
 
-			Assert("str", ok);
-		}
+            Assert("str", ok);
+        }
 
         static void testFunc()
         {
@@ -637,6 +686,22 @@ namespace ParserTest3
             var test4 = Expr(Lexer.Lex("神\tごめん、間違えて君を殺してしまった。\n\n"), 0);
 
             Assert("Expr", ok);
+        }
+
+        static void testLine()
+        {
+            bool ok = true;
+
+            var test1 = Line(Lexer.Lex("七瀬\tこんにちは"), 0);
+            var test2 = Line(Lexer.Lex("七瀬\tこんにちは\n\n"), 0);
+            var test3 = Line(Lexer.Lex("#七瀬との出会い"), 0);
+            var test4 = Line(Lexer.Lex("#七瀬との出会い\n"), 0);
+            var test5 = Line(Lexer.Lex("\tこんにちは"), 0);
+            var test6 = Line(Lexer.Lex("\tこんにちは\n"), 0);
+            var test7 = Line(Lexer.Lex("\n"), 0);
+            var test8 = Line(Lexer.Lex("七瀬\tにゃー//これは嘘\n……なんちゃって。"), 0);
+
+            Assert("Line", ok);
         }
 		#endregion
 	}
