@@ -380,7 +380,7 @@ namespace ParserTest3
 		/// <param name="list"></param>
 		/// <param name="index"></param>
 		/// <returns></returns>
-		static ParseResult str(List<Token> list, int index=0)
+		static ParseResult str(List<Token> list, int index)
 		{
 			//そこで終了する場合
 			if (index >= list.Count)
@@ -405,6 +405,39 @@ namespace ParserTest3
 				throw new ParseErrorException(list, index, NodeType.Str, list[index].Type);
 			}
 		}
+
+		/// <summary>
+		/// 函数
+		/// </summary>
+		/// <param name="list"></param>
+		/// <param name="index"></param>
+		/// <returns></returns>
+		static ParseResult Func(List<Token> list, int index)
+		{
+			//そこで終了する場合
+			if (index >= list.Count)
+			{
+				//ここで終わってはいけないので例外を投げる
+				throw new ParseErrorException(list, index, "構文要素《函数》の解析中にエラー。\nここで終了してはいけません。");
+			}
+
+			if (list[index].Type == TokenType.NormalString)
+			{
+				int resindex = index + 1;
+				return new ParseResult(new Node(NodeType.Str, new List<Token>() { list[index] }), resindex);
+			}
+			else if (list[index].Type == TokenType.Variable)
+			{
+				int resindex = index + 1;
+				return new ParseResult(new Node(NodeType.Str, new List<Token>() { list[index] }), resindex);
+			}
+			else
+			{
+				//ダメな要素がある場合
+				throw new ParseErrorException(list, index, NodeType.Str, list[index].Type);
+			}
+		}
+
 
 		#region テスト
 		/// <summary>
