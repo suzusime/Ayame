@@ -572,6 +572,12 @@ namespace ParserTest3
             }
         }
 
+        /// <summary>
+        /// 文
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
         static ParseResult Line(List<Token> list, int index)
         {
             //そこで終了する場合
@@ -591,6 +597,60 @@ namespace ParserTest3
                 ParseResult r2 = Expr(list, r1.index);
                 List<Node> children = new List<Node>() { r1.node };
                 children.Add(r2.node);
+                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r2.index);
+            }
+            //台詞のみの場合
+            else if (list[index].Type == TokenType.Tab)
+            {
+                ParseResult r1 = Expr(list, index + 1);
+                List<Node> children = new List<Node>() { r1.node };
+                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r1.index);
+            }
+            //ラベルの場合
+            else if (list[index].Type == TokenType.Sharp)
+            {
+                ParseResult r1 = str(list, index + 1);
+                List<Node> children = new List<Node>() { r1.node };
+                return new ParseResult(new Node(NodeType.LabelLine, r1.node.Content, children), r1.index);
+            }
+            //空行
+            else if (list[index].Type == TokenType.LF)
+            {
+                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), new List<Node>()), index + 1);
+            }
+            //ダメな場合
+            else
+            {
+                throw new ParseErrorException(list, index, NodeType.Line, list[index].Type);
+            }
+        }
+
+        /// <summary>
+        /// スクリプト
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        static ParseResult Script(List<Token> list, int index)
+        {
+            //そこで終了する場合
+            if (index >= list.Count)
+            {
+                //ここで終わってもよい
+                //終わった場合さらに一つ先を返す
+                //空行扱い
+                return new ParseResult(new Node(NodeType.Script, new Token(TokenType.None, ""), new List<Node>()), index + 1);
+            }
+
+            //行に内容がある場合
+            if (list[index].Type == TokenType.Delimiter || list[index].Type == TokenType.NormalString
+                || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBlacket
+                || list[index].Type == TokenType.Sharp || list[index].Type == TokenType.Tab)
+            {
+                ParseResult r1 = Line(list, index);
+                ParseResult r2 = Script(list, r1.index);
+                List<Node> children = new List<Node>() { r1.node };
+                children.AddRange(r2.node.Children);
                 return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r2.index);
             }
             //台詞のみの場合
