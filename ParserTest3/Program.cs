@@ -41,13 +41,14 @@ namespace ParserTest3
 		Tab,
 		Variable, //変数
 		NormalString, //普通文字列
+        None, //ノードが何も内容を持たないときに入れるトークンのタイプ
 	}
 
 	static class TokenTypeExt
 	{
 		public static string getName(this TokenType value)
 		{
-			string[] values = { "改行", "#", "$", "/", "[", "]", "区切", "タブ", "変数", "普通文字列" };
+			string[] values = { "改行", "#", "$", "/", "[", "]", "区切", "タブ", "変数", "普通文字列", "無" };
 			return values[(int)value];
 		}
 	}
@@ -61,13 +62,15 @@ namespace ParserTest3
 		{
 			get; set;
 		}
-		public List<Token> Children
+		public List<Node> Children
 		{
 			get; set;
 		}
-		public Node(NodeType type, List<Token> children)
+        public Token Content { get; set; }
+		public Node(NodeType type, Token content, List<Node> children)
 		{
 			Type = type;
+            Content = content;
 			Children = children;
 		}
 	}
@@ -392,12 +395,12 @@ namespace ParserTest3
 			if (list[index].Type == TokenType.NormalString)
 			{
 				int resindex = index + 1;
-				return new ParseResult(new Node(NodeType.Str,new List<Token>() { list[index] }), resindex);
+				return new ParseResult(new Node(NodeType.Str, list[index], new List<Node>()), resindex);
 			}
 			else if (list[index].Type == TokenType.Variable)
 			{
 				int resindex = index + 1;
-				return new ParseResult(new Node(NodeType.Str, new List<Token>() { list[index] }), resindex);
+				return new ParseResult(new Node(NodeType.Str, list[index], new List<Node>()), resindex);
 			}
 			else
 			{
@@ -421,21 +424,64 @@ namespace ParserTest3
 				throw new ParseErrorException(list, index, "構文要素《函数》の解析中にエラー。\nここで終了してはいけません。");
 			}
 
-			if (list[index].Type == TokenType.NormalString)
+            if (list[index].Type == TokenType.NormalString || list[index].Type == TokenType.Variable)
+            {
+                ParseResult r1 = str(list, index);
+                ParseResult r2 = Func_dash(list, r1.index);
+                List<Node> children = new List<Node>() { r1.node };
+                children.AddRange(r2.node.Children);
+                return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None,""), children), r2.index);
+            }
+            else if (list[index].Type == TokenType.OpenBlacket)
+            {
+                ParseResult r1 = Func(list, index + 1);
+                //そこで終了する場合
+                if (r1.index >= list.Count)
+                {
+                    //ここで終わってはいけないので例外を投げる
+                    throw new ParseErrorException(list, r1.index, "構文要素《函数》の解析中にエラー。\nここで終了してはいけません。");
+                }
+                ParseResult r2 = Func_dash(list, r1.index);
+                List<Node> children = new List<Node>() { r1.node };
+                children.AddRange(r2.node.Children);
+                return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None, ""), children), r2.index);
+            }
+            else
+            {
+                //ダメな要素がある場合
+                throw new ParseErrorException(list, index, NodeType.Func, list[index].Type);
+            }
+		}
+
+		/// <summary>
+		/// 函数'
+		/// </summary>
+		/// <param name="list"></param>
+		/// <param name="index"></param>
+		/// <returns></returns>
+		static ParseResult Func_dash(List<Token> list, int index)
+		{
+			//そこで終了する場合
+			if (index >= list.Count)
 			{
-				int resindex = index + 1;
-				return new ParseResult(new Node(NodeType.Str, new List<Token>() { list[index] }), resindex);
+				//ここで終わってはいけないので例外を投げる
+				throw new ParseErrorException(list, index, "構文要素《函数》の解析中にエラー。\nここで終了してはいけません。");
 			}
-			else if (list[index].Type == TokenType.Variable)
-			{
-				int resindex = index + 1;
-				return new ParseResult(new Node(NodeType.Str, new List<Token>() { list[index] }), resindex);
-			}
-			else
-			{
-				//ダメな要素がある場合
-				throw new ParseErrorException(list, index, NodeType.Str, list[index].Type);
-			}
+
+            if (list[index].Type == TokenType.CloseBlacket)
+            {
+                return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None,""), new List<Node>()), index+1);
+            }
+            else if (list[index].Type == TokenType.Delimiter)
+            {
+                ParseResult r1 = Func(list, index + 1);
+                return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None, ""), r1.node.Children), r1.index);
+            }
+            else
+            {
+                //ダメな要素がある場合
+                throw new ParseErrorException(list, index, NodeType.Func, list[index].Type);
+            }
 		}
 
 
@@ -447,6 +493,7 @@ namespace ParserTest3
 		static public void Test()
 		{
 			testStr();
+            testFunc();
 		}
 
 		/// <summary>
@@ -477,6 +524,20 @@ namespace ParserTest3
 
 			Assert("str", ok);
 		}
+
+        static void testFunc()
+        {
+            bool ok = true;
+
+            //さいしょ の [ はにゅうりょくしない
+            var test1 = Func(Lexer.Lex("hoge]"), 0);
+            var test2 = Func(Lexer.Lex("func arg1 arg2]"), 0);
+            var test3 = Func(Lexer.Lex("[inner] arg1 arg2]"), 0);
+            var test4 = Func(Lexer.Lex("[inner argin] arg1 arg2]"), 0);
+            var test5 = Func(Lexer.Lex("[func1 arg11] [func2 arg21 [func3 func33] arg22]]"), 0);
+
+            Assert("Func", ok);
+        }
 		#endregion
 	}
 }
