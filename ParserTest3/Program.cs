@@ -35,8 +35,8 @@ namespace ParserTest3
 		Dollar,
 		Slash,
 		//At, //アットマークは"構文上は"意味を持たない（変数名の先頭に含まれる際に特殊な処理を行うが、構文解析時には関係ない）。
-		OpenBlacket, // [
-		CloseBlacket, // ]
+		OpenBracket, // [
+		CloseBracket, // ]
 		Delimiter, //区切り
 		Tab,
 		Variable, //変数
@@ -205,11 +205,11 @@ namespace ParserTest3
 					}
 					else if (s == "[")
 					{
-						res.Add(new Token(TokenType.OpenBlacket, s));
+						res.Add(new Token(TokenType.OpenBracket, s));
 					}
 					else if (s == "]")
 					{
-						res.Add(new Token(TokenType.CloseBlacket, s));
+						res.Add(new Token(TokenType.CloseBracket, s));
 					}
 					else if (s == "\t")
 					{
@@ -436,7 +436,7 @@ namespace ParserTest3
                 children.AddRange(r2.node.Children);
                 return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None, ""), children), r2.index);
             }
-            else if (list[index].Type == TokenType.OpenBlacket)
+            else if (list[index].Type == TokenType.OpenBracket)
             {
                 ParseResult r1 = Func(list, index + 1);
                 //そこで終了する場合
@@ -473,7 +473,7 @@ namespace ParserTest3
             }
 
             //無の場合
-            if (list[index].Type == TokenType.CloseBlacket)
+            if (list[index].Type == TokenType.CloseBracket)
             {
                 return new ParseResult(new Node(NodeType.Func, new Token(TokenType.None, ""), new List<Node>()), index + 1);
             }
@@ -518,7 +518,7 @@ namespace ParserTest3
                 children.AddRange(r2.node.Children);
                 return new ParseResult(new Node(NodeType.Expr, new Token(TokenType.None, ""), children), r2.index);
             }
-            else if (list[index].Type == TokenType.OpenBlacket)
+            else if (list[index].Type == TokenType.OpenBracket)
             {
                 ParseResult r1 = Func(list, index + 1);
                 if (r1.index >= list.Count)
@@ -554,7 +554,7 @@ namespace ParserTest3
 
             //さらに続く場合。ちょっと実装をさぼって式に戻すことにする
             if (list[index].Type == TokenType.Delimiter || list[index].Type == TokenType.NormalString
-                || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBlacket)
+                || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBracket)
             {
                 ParseResult r1 = Expr(list, index);
                 List<Node> children = new List<Node>(r1.node.Children);
@@ -591,7 +591,7 @@ namespace ParserTest3
 
             //名前と台詞が両方ある場合
             if (list[index].Type == TokenType.Delimiter || list[index].Type == TokenType.NormalString
-                || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBlacket)
+                || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBracket)
             {
                 ParseResult r1 = Expr(list, index);
                 ParseResult r2 = Expr(list, r1.index);
@@ -642,10 +642,11 @@ namespace ParserTest3
                 return new ParseResult(new Node(NodeType.Script, new Token(TokenType.None, ""), new List<Node>()), index + 1);
             }
 
-            //行に内容がある場合
+            // CloseBracket以外全部丸投げ
             if (list[index].Type == TokenType.Delimiter || list[index].Type == TokenType.NormalString
-                || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBlacket
-                || list[index].Type == TokenType.Sharp || list[index].Type == TokenType.Tab)
+                || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBracket
+                || list[index].Type == TokenType.Sharp || list[index].Type == TokenType.Tab
+				|| list[index].Type == TokenType.LF)
             {
                 ParseResult r1 = Line(list, index);
                 ParseResult r2 = Script(list, r1.index);
@@ -653,29 +654,10 @@ namespace ParserTest3
                 children.AddRange(r2.node.Children);
                 return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r2.index);
             }
-            //台詞のみの場合
-            else if (list[index].Type == TokenType.Tab)
-            {
-                ParseResult r1 = Expr(list, index + 1);
-                List<Node> children = new List<Node>() { r1.node };
-                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r1.index);
-            }
-            //ラベルの場合
-            else if (list[index].Type == TokenType.Sharp)
-            {
-                ParseResult r1 = str(list, index + 1);
-                List<Node> children = new List<Node>() { r1.node };
-                return new ParseResult(new Node(NodeType.LabelLine, r1.node.Content, children), r1.index);
-            }
-            //空行
-            else if (list[index].Type == TokenType.LF)
-            {
-                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), new List<Node>()), index + 1);
-            }
             //ダメな場合
             else
             {
-                throw new ParseErrorException(list, index, NodeType.Line, list[index].Type);
+                throw new ParseErrorException(list, index, NodeType.Script, list[index].Type);
             }
         }
 
