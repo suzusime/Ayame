@@ -111,8 +111,13 @@ namespace ParserTest3
 		}
 	}
 
-	class ParseErrorException : Exception {
-		public ParseErrorException(List<Token> list, int index, string massage) : base("構文解析エラー：\n"+massage) { }
+    class LexErrorException : Exception
+    {
+        public LexErrorException(string message) : base(message) { }
+    }
+
+    class ParseErrorException : Exception {
+		public ParseErrorException(List<Token> list, int index, string message) : base("構文解析エラー：\n"+message) { }
 		public ParseErrorException(List<Token> list, int index, NodeType parsing, TokenType entered) 
 			: base("構文解析エラー：\n構文要素《"+parsing.getName()+"》の解析中にエラー。\nトークン〈"+entered.getName()+"〉はここに来てはいけません。")
 		{ }
@@ -165,6 +170,7 @@ namespace ParserTest3
 		static List<Token> Tokenize(string src)
 		{
 			bool isCommentMode = false;
+            int bracketCount = 0;//今何個の[]の入れ子の中にいるのか
 			List<Token> res = new List<Token>();
 			TextElementEnumerator charEnum = StringInfo.GetTextElementEnumerator(src);
 			while (charEnum.MoveNext())
@@ -181,8 +187,23 @@ namespace ParserTest3
 				{
 					if(s == "\n")
 					{
-						res.Add(new Token(TokenType.LF, s));
-					}
+                        if (bracketCount > 0)
+                        {
+                            //前も区切り文字だった場合一つのトークンにする
+                            if (res.Count > 0 && res.Last().Type == TokenType.Delimiter)
+                            {
+                                res.Last().Text += " ";
+                            }
+                            else
+                            {
+                                res.Add(new Token(TokenType.Delimiter, s));
+                            }
+                        }
+                        else
+                        {
+                            res.Add(new Token(TokenType.LF, s));
+                        }
+                    }
 					else if(s == "#")
 					{
 						res.Add(new Token(TokenType.Sharp, s));
@@ -206,16 +227,41 @@ namespace ParserTest3
 					else if (s == "[")
 					{
 						res.Add(new Token(TokenType.OpenBracket, s));
+                        bracketCount++;
 					}
 					else if (s == "]")
 					{
 						res.Add(new Token(TokenType.CloseBracket, s));
+                        bracketCount--;
 					}
 					else if (s == "\t")
 					{
-						res.Add(new Token(TokenType.Tab, s));
-					}
-					else if(s==" ")
+                        if (bracketCount > 0)
+                        {
+                            //前も区切り文字だった場合一つのトークンにする
+                            if (res.Count > 0 && res.Last().Type == TokenType.Delimiter)
+                            {
+                                res.Last().Text += " ";
+                            }
+                            else
+                            {
+                                res.Add(new Token(TokenType.Delimiter, s));
+                            }
+                        }
+                        else
+                        {
+                            //前も区切り文字だった場合一つのトークンにする
+                            if (res.Count > 0 && res.Last().Type == TokenType.Tab)
+                            {
+                                res.Last().Text += "\t";
+                            }
+                            else
+                            {
+                                res.Add(new Token(TokenType.Tab, s));
+                            }
+                        }
+                    }
+                    else if(s==" ")
 					{
 						//前も区切り文字だった場合一つのトークンにする
 						if (res.Count > 0 && res.Last().Type == TokenType.Delimiter)
@@ -227,7 +273,7 @@ namespace ParserTest3
 						}
 					}
 					//変数名として使用可能な文字
-					else if (!Regex.IsMatch(s, @"[^a-zA-z0-9]"))
+					else if (!Regex.IsMatch(s, @"[^a-zA-Z0-9]"))
 					{
 						//前が$であった場合は変数名とする
 						if(res.Count > 0 && res.Last().Type == TokenType.Dollar)
@@ -263,6 +309,11 @@ namespace ParserTest3
 							res.Add(new Token(TokenType.NormalString, s));
 						}
 					}
+
+                    if(bracketCount<0)
+                    {
+
+                    }
 				}
 			}
 			return res;
@@ -851,6 +902,8 @@ namespace ParserTest3
 
 
     (略)"), 0);
+
+            var test3 = Script(Lexer.Lex("[func hoge]"), 0);
 
 
             Assert("Script", ok);
