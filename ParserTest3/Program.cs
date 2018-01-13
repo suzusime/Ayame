@@ -573,7 +573,7 @@ namespace ParserTest3
         }
 
         /// <summary>
-        /// 文
+        /// 行
         /// </summary>
         /// <param name="list"></param>
         /// <param name="index"></param>
@@ -589,21 +589,41 @@ namespace ParserTest3
                 return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), new List<Node>()), index + 1);
             }
 
-            //名前と台詞が両方ある場合
+            //最初に式が来る場合
             if (list[index].Type == TokenType.Delimiter || list[index].Type == TokenType.NormalString
                 || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBracket)
             {
                 ParseResult r1 = Expr(list, index);
-                ParseResult r2 = Expr(list, r1.index);
-                List<Node> children = new List<Node>() { r1.node };
-                children.Add(r2.node);
-                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r2.index);
+                //次にもうひとつ式が続く場合とそうでない場合で場合分け
+                if (r1.index - 1 >= list.Count || list[r1.index - 1].Type == TokenType.LF)
+                {
+                    List<Node> children = new List<Node>() { r1.node };
+                    return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r1.index);
+                }
+                else if (list[r1.index - 1].Type == TokenType.Tab)
+                {
+                    ParseResult r2 = Line_dash(list, r1.index);
+                    List<Node> children = new List<Node>() { r1.node };
+                    children.AddRange(r2.node.Children);
+                    return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r2.index);
+                }
+                else
+                {
+                    throw new ParseErrorException(list, index, NodeType.Line, list[r1.index].Type);
+                }
             }
             //台詞のみの場合
             else if (list[index].Type == TokenType.Tab)
             {
                 ParseResult r1 = Expr(list, index + 1);
-                List<Node> children = new List<Node>() { r1.node };
+                //この場合、キャラ名が空白であるというような処理をしたい
+                //それによってタブすらない場合（字の文として扱う？）と区別する
+                Node nameNode = new Node(NodeType.Expr, new Token(TokenType.None, ""),
+                    new List<Node>() { new Node(NodeType.Str, new Token(TokenType.NormalString, ""), new List<Node>()) }
+                    );
+                List<Node> children = new List<Node>() {
+                    nameNode,
+                    r1.node };
                 return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r1.index);
             }
             //ラベルの場合
@@ -617,6 +637,45 @@ namespace ParserTest3
             else if (list[index].Type == TokenType.LF)
             {
                 return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), new List<Node>()), index + 1);
+            }
+            //ダメな場合
+            else
+            {
+                throw new ParseErrorException(list, index, NodeType.Line, list[index].Type);
+            }
+        }
+
+        /// <summary>
+        /// 行'
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        static ParseResult Line_dash(List<Token> list, int index)
+        {
+            //そこで終了する場合
+            if (index >= list.Count)
+            {
+                //ここで終わってもよい
+                //終わった場合さらに一つ先を返す
+                //空行扱い
+                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), new List<Node>()), index + 1);
+            }
+
+            //最初に式が来る場合
+            if (list[index].Type == TokenType.Delimiter || list[index].Type == TokenType.NormalString
+                || list[index].Type == TokenType.Variable || list[index].Type == TokenType.OpenBracket)
+            {
+                ParseResult r1 = Expr(list, index);
+                if (r1.index-1 >= list.Count || list[r1.index - 1].Type == TokenType.LF)
+                {
+                    List<Node> children = new List<Node>() { r1.node };
+                    return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r1.index);
+                }
+                else
+                {
+                    throw new ParseErrorException(list, index, NodeType.Line, list[r1.index].Type);
+                }
             }
             //ダメな場合
             else
@@ -672,6 +731,7 @@ namespace ParserTest3
             testFunc();
             testExpr();
             testLine();
+            testScript();
         }
 
         /// <summary>
@@ -742,8 +802,58 @@ namespace ParserTest3
             var test6 = Line(Lexer.Lex("\tこんにちは\n"), 0);
             var test7 = Line(Lexer.Lex("\n"), 0);
             var test8 = Line(Lexer.Lex("七瀬\tにゃー//これは嘘\n……なんちゃって。"), 0);
+            var test9 = Line(Lexer.Lex("七瀬\n"), 0);
 
             Assert("Line", ok);
+        }
+
+        static void testScript()
+        {
+            bool ok = true;
+
+            var test1 = Script(Lexer.Lex("七瀬\tこんにちは、$heroさん。"), 0);
+            var test2 = Script(Lexer.Lex(@"[str hero 越前]//文字列変数""hero""を定義し「越前」を代入。
+[bool flag1 false]//真理値変数""flag1""を定義し「false」を代入。
+[set flag1 true]//一度定義した変数に代入。
+//これらの函数は返り値が空文字列なので、以上の行（コメントのためにここまでで一行となっている）は空行となる。
+//よってクリック待ちなどはかからずにそのまま次へ進む。
+
+七瀬  どうして$hero君はそこまで……赤の他人の私のことを構ってくれるの…？
+
+//選択肢
+//select函数は選択肢ウィンドウを表示して、その結果を1から始まる整数で返す。
+//switch函数は [switch (1から始まる整数値) (1の場合の処理) (2の場合の処理) ...] を行う函数。
+//jump函数は「その行の処理が終わった次の処理をlabelの先に変更する」函数。
+[int @select1 [select どうしてって言われると……なんとなく、だ。 そんなの……お前のことが好きだからに決まってる。]]
+[switch $@select1 [jump badend] [jump happyend]]
+//当然次のようにも書ける：
+// [switch [select どうしてって言われると……なんとなく、だ。 そんなの……お前のことが好きだからに決まってる。] [jump badend] [jump happyend]]
+
+#badend
+七瀬  ……うん、そうだよね。
+
+    [cg 1 nanase_egao] でも、なんとなくそんなことができるのってすごいなって思う。//2行目以降は名前を入れる必要はないのでTAB文字で始める。
+
+//地の文
+	そう言って七瀬は笑った。
+	笑顔が茜色に照らされて眩しかった。
+
+	(略)//とはいってもあまり長い分岐は一ファイルの中のラベルで完結させないで別ファイルに飛ばすとかすると思う。
+
+#happyend
+七瀬 [cg 1 nanase_tere]えっ！？？
+
+	七瀬は素っ頓狂な声を上げる。
+	夕陽の中ただでさえ赤く見えていた表情は、みるみるうちにその色を濃くしていった。
+
+//if函数は [if (真理値) (真の場合) (偽の場合)]といった調子。3項演算子みたいなの。
+七瀬 じゃあ、もしかしてあの時[if $flag1 ぬいぐるみ 抱き枕] をくれたのって……
+
+
+    (略)"), 0);
+
+
+            Assert("Script", ok);
         }
 		#endregion
 	}
