@@ -13,4 +13,4 @@ Ayame
 - [構文解析仕様](docs/構文解析仕様.md)
 
 ## ライセンス
-The MIT Lisence
+MIT License
