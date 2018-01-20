@@ -903,10 +903,11 @@ namespace ParserTest3
 
     (略)"), 0);
 
-            var test3 = Script(Lexer.Lex("[func hoge]"), 0);
+            var test3 = Script(Lexer.Lex("[func hoge]\n"), 0);
+			var test4 = Script(Lexer.Lex("[func hoge]\n[func2 hoge]\tにゃん"), 0);
 
 
-            Assert("Script", ok);
+			Assert("Script", ok);
         }
 		#endregion
 	}
