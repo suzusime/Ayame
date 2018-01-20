@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 
-namespace ParserTest3
+namespace Ayame
 {
 	/// <summary>
 	/// 字句解析器の出力に用いるトークン
