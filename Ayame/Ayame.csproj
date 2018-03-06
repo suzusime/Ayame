@@ -7,8 +7,8 @@
     <ProjectGuid>{8FE51AC7-816F-46D4-BF73-2143E87E0C26}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ParserTest3</RootNamespace>
-    <AssemblyName>ParserTest3</AssemblyName>
+    <RootNamespace>Ayame</RootNamespace>
+    <AssemblyName>Ayame</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Generater\Generater.cs" />
     <Compile Include="Lexer\Lexer.cs" />
     <Compile Include="Lexer\Token.cs" />
     <Compile Include="Parser\Node.cs" />
