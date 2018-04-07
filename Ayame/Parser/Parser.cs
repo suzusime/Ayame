@@ -251,6 +251,7 @@ namespace Ayame
                 //次にもうひとつ式が続く場合とそうでない場合で場合分け
                 if (r1.index - 1 >= list.Count || list[r1.index - 1].Type == TokenType.LF)
                 {
+					//地の文の場合
                     List<Node> children = new List<Node>() { r1.node };
                     return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r1.index);
                 }
@@ -271,7 +272,7 @@ namespace Ayame
             {
                 ParseResult r1 = Expr(list, index + 1);
                 //この場合、キャラ名が空白であるというような処理をしたい
-                //それによってタブすらない場合（字の文として扱う？）と区別する
+                //それによってタブすらない場合（地の文として扱う）と区別する
                 Node nameNode = new Node(NodeType.Expr, new Token(TokenType.None, ""),
                     new List<Node>() { new Node(NodeType.Str, new Token(TokenType.NormalString, ""), new List<Node>()) }
                     );
@@ -365,7 +366,7 @@ namespace Ayame
                 ParseResult r2 = Script(list, r1.index);
                 List<Node> children = new List<Node>() { r1.node };
                 children.AddRange(r2.node.Children);
-                return new ParseResult(new Node(NodeType.Line, new Token(TokenType.None, ""), children), r2.index);
+                return new ParseResult(new Node(NodeType.Script, new Token(TokenType.None, ""), children), r2.index);
             }
             //ダメな場合
             else
@@ -508,9 +509,10 @@ namespace Ayame
 
             var test3 = Script(Lexer.Lex("[func hoge]\n"), 0);
             var test4 = Script(Lexer.Lex("[func hoge]\n[func2 hoge]\tにゃん"), 0);
+			var test5 = Script(Lexer.Lex("[r]\n"), 0);
+			var test6 = Script(Lexer.Lex("[[func]]\n"), 0);
 
-
-            Assert("Script", ok);
+			Assert("Script", ok);
         }
         #endregion
     }
