@@ -121,7 +121,7 @@ namespace Ayame
 		{
 			var test1 = Generate(Parser.Parse(""));
 			var test2 = Generate(Parser.Parse("こんにちは"));
-			var test3 = Generate(Parser.Parse("\tまいくのテストちゅー\n"));
+			var test3 = Generate(Parser.Parse("\tThis\\ is\\ an\\ test.\n"));
 			var test4 = Generate(Parser.Parse("七瀬\tご注文は[if true うさぎ たぬき]ですか？\n"));
 
 			Console.WriteLine("OK: Generater");

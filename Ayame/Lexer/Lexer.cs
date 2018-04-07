@@ -44,6 +44,7 @@ namespace Ayame
 		static List<Token> Tokenize(string src)
 		{
 			bool isCommentMode = false;
+			bool isEscapeMode = false;//次の文字をエスケープするフラグ
 			int bracketCount = 0;//今何個の[]の入れ子の中にいるのか
 			List<Token> res = new List<Token>();
 			TextElementEnumerator charEnum = StringInfo.GetTextElementEnumerator(src);
@@ -59,7 +60,19 @@ namespace Ayame
 				}
 				else
 				{
-					if (s == "\n")
+					if (isEscapeMode) {
+						//エスケープモードの場合問答無用で普通文字列にする
+						if (res.Count > 0 && res.Last().Type == TokenType.NormalString)
+						{
+							res.Last().Text += s;
+						}
+						else
+						{
+							res.Add(new Token(TokenType.NormalString, s));
+						}
+						isEscapeMode = false;
+					}
+					else if (s == "\n")
 					{
 						if (bracketCount > 0)
 						{
@@ -147,6 +160,11 @@ namespace Ayame
 						{
 							res.Add(new Token(TokenType.Delimiter, s));
 						}
+					}
+					else if (s == "\\")
+					{
+						//エスケープモードに入る
+						isEscapeMode = true;
 					}
 					//変数名として使用可能な文字
 					else if (!Regex.IsMatch(s, @"[^a-zA-Z0-9]"))
