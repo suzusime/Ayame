@@ -35,6 +35,11 @@ namespace Ayame
     /// </summary>
     static class Parser
     {
+		static public Node Parse(string script)
+		{
+			return Script(Lexer.Lex(script), 0).node;
+		}
+
         /// <summary>
         /// 文字列をパースする
         /// </summary>

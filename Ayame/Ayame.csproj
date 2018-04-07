@@ -43,7 +43,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exterior\Command.cs" />
     <Compile Include="Generater\Generater.cs" />
+    <Compile Include="Exterior\Gyou.cs" />
     <Compile Include="Lexer\Lexer.cs" />
     <Compile Include="Lexer\Token.cs" />
     <Compile Include="Parser\Node.cs" />

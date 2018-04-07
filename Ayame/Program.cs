@@ -13,6 +13,7 @@ namespace Ayame
         {
             Lexer.Test();
             Parser.Test();
+			Generater.Test();
 
             Console.ReadLine();
         }
