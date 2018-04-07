@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Ayame
 {
-	enum GyouType
+	public enum GyouType
 	{
 		Ji,//地の文
 		Serifu,//台詞
@@ -20,7 +20,7 @@ namespace Ayame
 	/// 実行機械は1行ごとに実行していく
 	/// つまりプログラムカウンタの指し示す単位がこれ
 	/// </summary>
-	class Gyou
+	public class Gyou
 	{
 		public GyouType LineType
 		{

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Ayame
 {
-	enum CommandType
+	public enum CommandType
 	{
 		Plain,//そのまま文字を表示
 		Var,//変数を呼び出す
@@ -16,7 +16,7 @@ namespace Ayame
 	/// 原子的なコマンド
 	/// これを実行機械が順次評価していく
 	/// </summary>
-	class Command
+	public class Command
 	{
 		public CommandType ComType
 		{

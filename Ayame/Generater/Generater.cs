@@ -6,32 +6,32 @@ using System.Threading.Tasks;
 
 namespace Ayame
 {
-    static class Generater
-    {
-        static Generater()
-        {
+	static class Generater
+	{
+		static Generater()
+		{
 
-        }
+		}
 
-        /// <summary>
-        /// 構文木から目的コードを生成する
-        /// </summary>
-        /// <param name="src">構文木</param>
-        /// <returns>目的コード</returns>
-        static List<Gyou> Generate(Node src)
-        {
-            switch (src.Type)
-            {
-                case NodeType.Script:
-                    List<Gyou> res = new List<Gyou>();
-                    foreach(Node item in src.Children)
-                    {
+		/// <summary>
+		/// 構文木から目的コードを生成する
+		/// </summary>
+		/// <param name="src">構文木</param>
+		/// <returns>目的コード</returns>
+		static public List<Gyou> Generate(Node src)
+		{
+			switch (src.Type)
+			{
+				case NodeType.Script:
+					List<Gyou> res = new List<Gyou>();
+					foreach (Node item in src.Children)
+					{
 						res.AddRange(Generate(item));
-                    }
-                    return res;
-                case NodeType.Line:
-                    switch (src.Children.Count)
-                    {
+					}
+					return res;
+				case NodeType.Line:
+					switch (src.Children.Count)
+					{
 						case 0://空行の場合
 							return new List<Gyou>()
 							{
@@ -59,18 +59,18 @@ namespace Ayame
 									Gyou.MakeSerifu(MakeCommands(src.Children[0]), MakeCommands(src.Children[1]))
 								};
 							}
-                        default:
-                            throw new Exception();
-                    }
-                case NodeType.LabelLine:
+						default:
+							throw new Exception();
+					}
+				case NodeType.LabelLine:
 					return new List<Gyou>()
 					{
 						Gyou.MakeLabel(src.Content.Text)
 					};
-                default:
-                    throw new NotImplementedException();
-            }
-        }
+				default:
+					throw new NotImplementedException();
+			}
+		}
 
 		static private List<Command> MakeCommands(Node src)
 		{
@@ -78,7 +78,7 @@ namespace Ayame
 			{
 				case NodeType.Expr:
 					List<Command> res = new List<Command>();
-					foreach(var item in src.Children)
+					foreach (var item in src.Children)
 					{
 						res.AddRange(MakeCommands(item));
 					}
@@ -104,7 +104,7 @@ namespace Ayame
 					}
 				case NodeType.Func:
 					List<Command> children = new List<Command>();
-					foreach(var item in src.Children)
+					foreach (var item in src.Children)
 					{
 						children.AddRange(MakeCommands(item));
 					}
