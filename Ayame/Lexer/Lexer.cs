@@ -167,7 +167,7 @@ namespace Ayame
 						isEscapeMode = true;
 					}
 					//変数名として使用可能な文字
-					else if (!Regex.IsMatch(s, @"[^a-zA-Z0-9]"))
+					else if (!Regex.IsMatch(s, @"[^a-zA-Z0-9@]"))
 					{
 						//前が$であった場合は変数名とする
 						if (res.Count > 0 && res.Last().Type == TokenType.Dollar)
